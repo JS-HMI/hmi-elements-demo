@@ -18,6 +18,8 @@
   "homepage": "https://github.com/JaS-HMI/hmi-elements-demo#readme",
   "dependencies": {
     "jashmi": "file:../jashmi",
+    "rollup": "^2.7.6",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "valves": "file:../valves"
   }
 }
