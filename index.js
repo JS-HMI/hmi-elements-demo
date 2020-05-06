@@ -1,6 +1,6 @@
 import 'jashmi'
 import 'valves'
-import {Manager, fakeDataEngine  } from 'jashmi'
+import {Manager, fakeDataEngine, HmiLabel  } from 'jashmi'
 
 /*let engine = new JsonPollEngine("std",{
     readPrefix : "api/JSON/read",
@@ -8,7 +8,6 @@ import {Manager, fakeDataEngine  } from 'jashmi'
     readInterval_ms : 2000
 });
 */
-
 
 
 let engine = new fakeDataEngine("std");

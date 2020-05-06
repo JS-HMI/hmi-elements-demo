@@ -793,7 +793,7 @@ class ServiceManager {
         let engine = this.GetEngine(engine_name);
         if (engine) {
             if (this.dataTree.ExistVar(target)) {
-                if (!engine.isVarSubscribed(target)) // var exist from localstorage but not yet subscribed
+                if (!engine.isVarSubscribed(target) && this.dataTree.GetVar(target).status !== VarStatusCodes.Pending) // var exist from localstorage but not yet subscribed
                     this.dataTree.UpdateStatus(target, VarStatusCodes.Pending);
             }
             else
@@ -1087,6 +1087,11 @@ class fakeDataEngine extends DataCommsEngine {
             let el = document.querySelector(`[name="${v.name}"]`);
             if (typeof v.name !== "string" || v.name === "" || el === null) {
                 resp.push(new VarResponse(false, v.name, v.system));
+                return;
+            }
+            // remember last value
+            if (this.manager.dataTree.GetVar(v).value !== null) {
+                resp.push(new VarResponse(true, v.name, v.system));
                 return;
             }
             let val = 0;
@@ -3598,14 +3603,17 @@ class hmiElement extends litStatesMixin([Manager.dataTree, Manager.errorTray], L
         }
     }
     on_datatree_update() {
-        if (this.getAttribute("status") !== this.status)
-            this.setAttribute("status", this.status);
+        this.setAttribute("status", this.status);
     }
     connectedCallback() {
         super.connectedCallback();
         // maybe here dispatch READY event??
         // maybe here resolve a READY promise so one can await it??
-        Manager.Subscribe(this.engine, this).then(() => { this._init = true; });
+        Manager.Subscribe(this.engine, this).then(() => {
+            this._init = true;
+            this.on_datatree_update();
+            this.requestUpdate();
+        });
     }
     disconnectedCallback() {
         if (super.disconnectedCallback)
@@ -3692,6 +3700,7 @@ class statusSwitch extends hmiElement {
         `;
     }
 }
+//@ts-ignore
 customElements.define("status-switch", statusSwitch);
 
 class boolColorSwitch extends hmiElement {
@@ -3726,15 +3735,15 @@ class boolColorSwitch extends hmiElement {
                 display:block;
             }
             [val="on"]::slotted(*){
-                stroke : blue;
+                stroke : black;
                 fill : green;
             }
             [val="off"]::slotted(*){
-                stroke : blue;
-                fill : gray;
+                stroke : black;
+                fill : lightgray;
             }
             :host([status="ERROR"]) > ::slotted(*){
-                stroke : red;
+                stroke : black;
                 fill : red;
             }
             :host([status="UNSUBSCRIBED"]) > ::slotted(*){
@@ -3763,6 +3772,43 @@ class boolColorSwitch extends hmiElement {
 }
 //@ts-ignore
 customElements.define("bool-color", boolColorSwitch);
+
+class HmiLabel extends hmiElement {
+    static get styles() {
+        return css `
+            :host{
+                display:flex;
+                flex-direction : column;
+                justify-content : center;
+                align-items : center;
+            }
+            div{
+                border: 1px solid grey;
+                border-radius : 0.4rem;
+                padding: 0.2rem;
+                font-family: 'Roboto', sans-serif;
+                margin-bottom : 0.2rem;
+                width:100%;
+                text-align:center;
+                color:#333333;
+            }
+            :host([status="ERROR"]) > div{
+                color : red;
+            }
+            :host([status="WARNING"]) > div{
+                color : orange;
+            }
+        `;
+    }
+    render() {
+        return html `
+            <div><strong>${this.name}</strong></div>
+            <slot>Empty Slot</slot>
+        `;
+    }
+}
+//@ts-ignore
+customElements.define("hmi-label", HmiLabel);
 
 class pvrIcon extends LitElement {
     render() {
@@ -3805,23 +3851,6 @@ customElements.define("pvd-icon", pvdIcon);
 class ValvePR extends hmiElement {
     static get styles() {
         return css `
-            :host{
-                display:flex;
-                flex-direction:column;
-                align-items:center;
-            }
-            div{
-                font-family: 'Roboto', sans-serif;
-                border : solid 1px gray;
-                border-radius: 0.5rem;
-                padding:0.3rem;
-                margin-bottom : 0.2rem;
-                width:100%;
-                text-align:center;
-            }
-            div[err]{
-                color : red;
-            }
             bool-color{
                 width : 100%;
             }
@@ -3829,17 +3858,36 @@ class ValvePR extends hmiElement {
     }
     render() {
         return html `
-            <div>
-            <strong >${this.name}</strong>
-            </div>
-            <bool-color name="${this.name}"  engine="${this.engine}" system="${this.system}"> 
-                <pvr-icon></pvr-icon>
-            </bool-color>
+            <hmi-label name="${this.name}"  engine="${this.engine}" system="${this.system}">
+                <bool-color name="${this.name}"  engine="${this.engine}" system="${this.system}"> 
+                    <pvr-icon></pvr-icon>
+                </bool-color>
+            </hmi-label>
         `;
     }
 }
 //@ts-ignore
 customElements.define("valve-pr", ValvePR);
+class ValvePD extends hmiElement {
+    static get styles() {
+        return css `
+            bool-color{
+                width : 100%;
+            }
+        `;
+    }
+    render() {
+        return html `
+            <hmi-label name="${this.name}"  engine="${this.engine}" system="${this.system}">
+                <bool-color name="${this.name}"  engine="${this.engine}" system="${this.system}"> 
+                    <pvd-icon></pvd-icon>
+                </bool-color>
+            </hmi-label>
+        `;
+    }
+}
+//@ts-ignore
+customElements.define("valve-pd", ValvePD);
 
 /*let engine = new JsonPollEngine("std",{
     readPrefix : "api/JSON/read",
@@ -3847,7 +3895,6 @@ customElements.define("valve-pr", ValvePR);
     readInterval_ms : 2000
 });
 */
-
 
 
 let engine = new fakeDataEngine("std");

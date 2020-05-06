@@ -16,20 +16,6 @@
             width: 100%;
             height: 90vh;
         }
-        div.a1{
-            font-family: 'Roboto', sans-serif;
-            border : solid 1px gray;
-            border-radius: 0.5rem;
-            padding:0.3rem;
-            margin-bottom : 0.2rem;
-            width:100%;
-            text-align:center;
-        }
-        div.a2{
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-        }
     </style>
 </head>
 <body>
@@ -37,15 +23,7 @@
     
 <div class="container"> 
     <valve-pr style="width:4rem;" name="PV01"></valve-pr> 
-
-    <div class="a2">
-        <div class="a1">
-            <strong >PV02</strong>
-        </div>
-        <bool-color style="width:4rem;" name="MyVar">
-            <pvd-icon></pvd-icon>
-        </bool-color>
-    </div>
+    <valve-pd style="width:4rem;" name="PV02"></valve-pd> 
 </div>
 
 </body>
